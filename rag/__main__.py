@@ -40,16 +40,20 @@ def main() -> None:
     inspect.add_argument("--limit", type=int, default=2)
     embed = commands.add_parser("embed", help="Fill missing passage embeddings in batches")
     embed.add_argument("--batch-size", type=positive_int, default=16)
-    search = commands.add_parser("search", help="Rank passages with one retriever")
-    search.add_argument("method", choices=("bm25", "dense"))
+    search = commands.add_parser("search", help="Rank passages with BM25, dense search, or RRF")
+    search.add_argument("method", choices=("bm25", "dense", "hybrid"))
     search.add_argument("query")
     search.add_argument("--limit", type=positive_int, default=50)
+    evaluate = commands.add_parser("evaluate-dev", help="Compare BM25, dense, and hybrid at rank 10")
+    evaluate.add_argument("--save-rankings", type=Path, metavar="CSV", help="Write the top-ten IDs per query")
     args = parser.parse_args()
 
     if args.command == "download":
         download(args.data_dir)
         return
     with psycopg.connect(os.environ.get("RAG_DATABASE_URL", LOCAL_DSN)) as conn:
+        if args.command == "evaluate-dev" or (args.command == "search" and args.method == "hybrid"):
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         if args.command == "ingest":
             print(f"{ingest(conn, args.data_dir)} passages in the database")
         elif args.command == "verify":
@@ -60,18 +64,31 @@ def main() -> None:
             from .dense import embed_missing
 
             print(f"Stored {embed_missing(conn, args.batch_size)} new passage embeddings")
+        elif args.command == "evaluate-dev":
+            from .evaluate_dev import CUTOFF, evaluate_dev
+
+            scores = evaluate_dev(conn, args.data_dir, args.save_rankings)
+            summary = {name: asdict(result) for name, result in scores.items()}
+            print(json.dumps({"split": "dev", "cutoff": CUTOFF, "methods": summary}, indent=2))
         else:
-            if args.method == "bm25":
-                from .retrieval import BM25Retriever
+            try:
+                if args.method == "dense":
+                    from .dense import search_dense
 
-                hits = BM25Retriever.from_database(conn).search(args.query, args.limit)
-            else:
-                from .dense import search_dense
-
-                try:
                     hits = search_dense(conn, args.query, args.limit)
-                except ValueError as error:
-                    parser.error(str(error))
+                else:
+                    from .retrieval import BM25Retriever
+
+                    lexical_index = BM25Retriever.from_database(conn)
+                    if args.method == "bm25":
+                        hits = lexical_index.search(args.query, args.limit)
+                    else:
+                        from .hybrid import fuse_rankings, retrieve_candidates
+
+                        bm25, dense = retrieve_candidates(conn, lexical_index, args.query)
+                        hits = fuse_rankings(bm25, dense, args.limit)
+            except ValueError as error:
+                parser.error(str(error))
             print(json.dumps([asdict(hit) for hit in hits], indent=2, ensure_ascii=False))
 
 

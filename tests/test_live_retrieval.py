@@ -48,3 +48,26 @@ def test_real_cli_scores_and_source_text(method, query, monkeypatch, capsys):
                 assert hit["score"] == pytest.approx(1 - similarity, abs=2e-6)
             else:
                 assert hit["score_type"] == "bm25"
+
+
+@pytest.mark.skipif(os.getenv("RAG_LIVE_TESTS") != "1", reason="requires embedded NFCorpus and cached model")
+def test_real_hybrid_cli_uses_both_top_fifties(monkeypatch, capsys):
+    from fractions import Fraction
+
+    def search(method, limit):
+        monkeypatch.setattr(sys, "argv", ["rag", "search", method, PARAPHRASE, "--limit", str(limit)])
+        main()
+        return json.loads(capsys.readouterr().out)
+
+    sources = [search("bm25", 50), search("dense", 50)]
+    ranks = [{hit["passage_id"]: hit["rank"] for hit in source} for source in sources]
+    passages = {hit["passage_id"]: hit for source in sources for hit in source}
+    scores = {doc_id: sum(Fraction(1, 60 + r[doc_id]) for r in ranks if doc_id in r) for doc_id in passages}
+    expected_ids = sorted(scores, key=lambda doc_id: (-scores[doc_id], doc_id))[:10]
+    hybrid = search("hybrid", 10)
+    assert [h["passage_id"] for h in hybrid] == expected_ids
+    for position, hit in enumerate(hybrid, start=1):
+        doc_id = hit["passage_id"]
+        assert (hit["rank"], hit["bm25_rank"], hit["dense_rank"]) == (position, ranks[0].get(doc_id), ranks[1].get(doc_id))
+        assert hit["score_type"] == "rrf" and hit["score"] == float(scores[doc_id])
+        assert (hit["title"], hit["body"]) == (passages[doc_id]["title"], passages[doc_id]["body"])

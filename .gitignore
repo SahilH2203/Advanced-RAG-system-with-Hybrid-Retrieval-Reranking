@@ -22,7 +22,3 @@ htmlcov/
 
 # Optional: locally created phase archives
 /phase_*.zip
-
-#.md files
-*.md
-!README.md

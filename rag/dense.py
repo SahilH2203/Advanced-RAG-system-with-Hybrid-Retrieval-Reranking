@@ -22,7 +22,7 @@ def load_encoder():
 
     default_home = Path(__file__).resolve().parents[1] / "data" / "hf"
     cache = Path(os.environ.get("HF_HOME", default_home)) / "hub"
-    return SentenceTransformer(MODEL_ID, revision=MODEL_REVISION, cache_folder=str(cache))
+    return SentenceTransformer(MODEL_ID, revision=MODEL_REVISION, cache_folder=str(cache), device=os.environ.get("RAG_DENSE_DEVICE"))
 
 
 def encode_texts(texts: list[str]) -> np.ndarray:

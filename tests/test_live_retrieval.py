@@ -71,3 +71,37 @@ def test_real_hybrid_cli_uses_both_top_fifties(monkeypatch, capsys):
         assert (hit["rank"], hit["bm25_rank"], hit["dense_rank"]) == (position, ranks[0].get(doc_id), ranks[1].get(doc_id))
         assert hit["score_type"] == "rrf" and hit["score"] == float(scores[doc_id])
         assert (hit["title"], hit["body"]) == (passages[doc_id]["title"], passages[doc_id]["body"])
+
+
+@pytest.mark.skipif(os.getenv("RAG_LIVE_TESTS") != "1", reason="requires embedded NFCorpus and cached models")
+def test_real_reranked_cli_scores_fifty_before_returning_five(monkeypatch, capsys):
+    from rag.rerank import load_cross_encoder
+    from rag.retrieval import passage_text
+
+    def search(method, limit):
+        monkeypatch.setattr(sys, "argv", ["rag", "search", method, "cilantro", "--limit", str(limit)])
+        main()
+        return json.loads(capsys.readouterr().out)
+
+    source = search("hybrid", 50)
+    model = load_cross_encoder()
+    predict = model.predict
+    scores = []
+
+    def observe(pairs, **kwargs):
+        assert len(pairs) == len(source) == 50
+        assert pairs == [("cilantro", passage_text(h["title"], h["body"])) for h in source]
+        logits = predict(pairs, **kwargs)
+        scores.extend(logits.tolist())
+        return logits
+
+    monkeypatch.setattr(model, "predict", observe)
+    hits = search("reranked", 5)
+    expected = sorted(zip(source, scores, strict=True), key=lambda item: (-item[1], item[0]["passage_id"]))
+    assert len(hits) == 5 and load_cross_encoder() is model
+    for rank, (hit, (original, logit)) in enumerate(zip(hits, expected[:5], strict=True), 1):
+        assert (hit["rank"], hit["hybrid_rank"], hit["score"], hit["score_type"]) == (
+            rank, original["rank"], logit, "cross_encoder_logit",
+        )
+        for field in ("passage_id", "title", "body", "bm25_rank", "dense_rank"):
+            assert hit[field] == original[field]

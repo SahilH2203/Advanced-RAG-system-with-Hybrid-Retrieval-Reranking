@@ -2,6 +2,8 @@ import csv
 import gzip
 import json
 
+import pytest
+
 from rag import evaluate_dev
 from rag.metrics import Metrics
 from rag.retrieval import SearchHit
@@ -31,3 +33,25 @@ def test_dev_only_comparison_retains_empty_results(tmp_path, monkeypatch):
         assert list(csv.reader(stream)) == [
             ["query_id", "bm25", "dense", "hybrid"], ["q1", "X", "D X", "X D"], ["q2", "", "", ""],
         ]
+
+
+def test_four_method_evaluation_exports_the_full_candidate_set(tmp_path, monkeypatch):
+    monkeypatch.setattr(evaluate_dev, "read_records", lambda path: {"q": {"text": "question"}})
+    monkeypatch.setattr(evaluate_dev, "read_qrels", lambda path: {"q": {"D50": 2}})
+    monkeypatch.setattr(evaluate_dev.BM25Retriever, "from_database", lambda conn: object())
+    dense = [SearchHit(f"D{i:02}", i, float(i), "cosine_distance", "", "") for i in range(1, 51)]
+    monkeypatch.setattr(evaluate_dev, "retrieve_candidates", lambda conn, index, query: ([], dense))
+    monkeypatch.setattr(evaluate_dev, "rerank", lambda query, hits: list(reversed(hits)))
+    output = tmp_path / "run.csv"
+    scores = evaluate_dev.evaluate_dev(None, tmp_path, output, include_reranked=True)
+    assert scores["hybrid"] == evaluate_dev.DevMetrics(0, 0, 1, 1)
+    assert scores["reranked"] == evaluate_dev.DevMetrics(1, 1, 1, 1)
+    with output.open(encoding="utf-8", newline="") as stream:
+        row, = csv.DictReader(stream)
+    assert row["bm25"] == ""
+    assert len(row["reranked"].split()) == 50
+    assert row["reranked"].split() == list(reversed(row["hybrid"].split()))
+
+    monkeypatch.setattr(evaluate_dev, "rerank", lambda query, hits: hits[:-1] + hits[:1])
+    with pytest.raises(RuntimeError, match="changed the candidate set"):
+        evaluate_dev.evaluate_dev(None, tmp_path, include_reranked=True)

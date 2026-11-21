@@ -1,13 +1,9 @@
 import gzip
 import json
-import os
-from uuid import uuid4
 
 import psycopg
-from psycopg import sql
 import pytest
 
-from rag.__main__ import LOCAL_DSN
 from rag.dataset import SPLITS
 from rag.storage import ingest, inspect_dev, verify
 
@@ -30,18 +26,6 @@ def dataset(tmp_path):
             "query-id\tcorpus-id\tscore\nQ1\tMED-1\t2\nQ1\tMED-2\t0\n", encoding="utf-8"
         )
     return tmp_path
-
-
-@pytest.fixture
-def db():
-    # A unique search path keeps tests isolated even when the real corpus is loaded.
-    with psycopg.connect(os.environ.get("RAG_DATABASE_URL", LOCAL_DSN)) as conn:
-        with conn.transaction(force_rollback=True):
-            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-            schema = sql.Identifier("phase1_test_" + uuid4().hex)
-            conn.execute(sql.SQL("CREATE SCHEMA {}").format(schema))
-            conn.execute(sql.SQL("SET LOCAL search_path TO {}, public").format(schema))
-            yield conn
 
 
 def test_ingest_twice_and_inspect_judged_evidence(db, dataset):
@@ -83,3 +67,27 @@ def test_ingest_rolls_back_a_partially_invalid_batch(db, dataset):
         ingest(db, dataset)
     assert db.execute("SELECT title FROM passages WHERE passage_id = 'MED-1'").fetchone() == ("Bus timetable",)
     assert db.execute("SELECT count(*) FROM passages").fetchone() == (2,)
+
+
+def test_reingest_invalidates_only_changed_embeddings(db, dataset, monkeypatch):
+    import numpy as np
+    from rag import dense
+
+    ingest(db, dataset)
+    seen = []
+
+    def encode(texts):
+        seen.extend(texts)
+        return np.ones((len(texts), 384), dtype=np.float32)
+
+    monkeypatch.setattr(dense, "encode_texts", encode)
+    assert dense.embed_missing(db) == 2
+    ingest(db, dataset)
+    assert dense.embed_missing(db) == 0
+    write_records(dataset / "corpus.jsonl.gz", [
+        {"_id": "MED-1", "title": "Bus timetable", "text": "The last bus leaves at eight."},
+        {"_id": "MED-2", "title": "Library", "text": "The library opens at ten."},
+    ])
+    ingest(db, dataset)
+    assert dense.embed_missing(db) == 1
+    assert seen[-1] == "Bus timetable\nThe last bus leaves at eight."

@@ -1,0 +1,28 @@
+# Local Python environment and bootstrap
+/.bootstrap/
+/.venv/
+
+# Downloaded dataset
+/data/
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# Test output and logs
+.coverage
+htmlcov/
+*.log
+
+# Optional: locally created phase archives
+/phase_*.zip
+
+#.md files
+*.md
+!README.md

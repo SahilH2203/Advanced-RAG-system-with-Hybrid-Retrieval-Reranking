@@ -1,24 +1,40 @@
 # Local Python environment and bootstrap
 /.bootstrap/
 /.venv/
+/venv/
 
 # Downloaded dataset
 /data/
+/pgdata/
+/.ollama/
+/.cache/
+*.gguf
+*.safetensors
+pytorch_model*.bin
 
 # Python-generated files
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
 
 # Local environment configuration
 .env
 .env.*
 !.env.example
+.pgpass
+*.pem
+*.key
 
 # Test output and logs
 .coverage
 htmlcov/
 *.log
 
-# Optional: locally created phase archives
+# Internal implementation plans and phase reports are kept locally.
+*.md
+!/README.md
+
+# Private review archives and other ZIPs
 /phase_*.zip
+*.zip

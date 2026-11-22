@@ -44,16 +44,35 @@ def main() -> None:
     search.add_argument("method", choices=("bm25", "dense", "hybrid", "reranked"))
     search.add_argument("query")
     search.add_argument("--limit", type=positive_int, default=50)
+    ask = commands.add_parser("ask", help="Answer a question from the top three reranked passages using local Ollama")
+    ask.add_argument("question")
     evaluate = commands.add_parser("evaluate-dev", help="Compare development rankings, optionally with a reranker")
     evaluate.add_argument("--reranked", action="store_true", help="Include the cross-encoder and report Recall@50")
     evaluate.add_argument("--save-rankings", type=Path, metavar="CSV", help="Write ranked IDs (top 50 with --reranked)")
+    test = commands.add_parser("evaluate-test", help="Run all four frozen retrieval pipelines on the NFCorpus test split")
+    test.add_argument("--save-rankings", type=Path, default=Path("results/phase_6_test.csv"), metavar="CSV",
+                      help="Ranking export (default: results/phase_6_test.csv)")
+    replay = commands.add_parser("score-rankings", help="Recompute four-method metrics from saved rankings and qrels")
+    replay.add_argument("split", choices=("dev", "test"))
+    replay.add_argument("rankings", type=Path, metavar="CSV")
     args = parser.parse_args()
 
     if args.command == "download":
         download(args.data_dir)
         return
+    if args.command == "score-rankings":
+        from .evaluate_dev import CUTOFF, score_saved_rankings
+        from .hybrid import CANDIDATE_DEPTH
+
+        try:
+            scores = score_saved_rankings(args.data_dir, args.split, args.rankings)
+        except (ValueError, OSError, RuntimeError) as error:
+            parser.error(str(error))
+        print(json.dumps({"split": args.split, "cutoffs": [CUTOFF, CANDIDATE_DEPTH],
+                          "methods": {name: asdict(value) for name, value in scores.items()}}, indent=2))
+        return
     with psycopg.connect(os.environ.get("RAG_DATABASE_URL", LOCAL_DSN)) as conn:
-        if args.command == "evaluate-dev" or (args.command == "search" and args.method in ("hybrid", "reranked")):
+        if args.command in ("ask", "evaluate-dev", "evaluate-test") or (args.command == "search" and args.method in ("hybrid", "reranked")):
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         if args.command == "ingest":
             print(f"{ingest(conn, args.data_dir)} passages in the database")
@@ -65,18 +84,38 @@ def main() -> None:
             from .dense import embed_missing
 
             print(f"Stored {embed_missing(conn, args.batch_size)} new passage embeddings")
-        elif args.command == "evaluate-dev":
-            from .evaluate_dev import CUTOFF, evaluate_dev
+        elif args.command in ("evaluate-dev", "evaluate-test"):
+            from .evaluate_dev import CUTOFF, evaluate_split
             from .hybrid import CANDIDATE_DEPTH
             from .rerank import RerankError
 
+            split = "test" if args.command == "evaluate-test" else "dev"
+            reranked = split == "test" or args.reranked
             try:
-                scores = evaluate_dev(conn, args.data_dir, args.save_rankings, include_reranked=args.reranked)
+                scores = evaluate_split(conn, args.data_dir, split, args.save_rankings, include_reranked=reranked)
             except RerankError as error:
                 parser.error(str(error))
             summary = {name: asdict(result) for name, result in scores.items()}
-            cutoffs = {"cutoffs": [CUTOFF, CANDIDATE_DEPTH]} if args.reranked else {"cutoff": CUTOFF}
-            print(json.dumps({"split": "dev", **cutoffs, "methods": summary}, indent=2))
+            cutoffs = {"cutoffs": [CUTOFF, CANDIDATE_DEPTH]} if reranked else {"cutoff": CUTOFF}
+            print(json.dumps({"split": split, **cutoffs, "methods": summary}, indent=2))
+        elif args.command == "ask":
+            from .hybrid import CANDIDATE_DEPTH
+            from .ollama import OllamaError
+            from .qa import answer_from_passages
+            from .rerank import RerankError
+
+            if not args.question.strip():
+                parser.error("A nonblank question is required.")
+            try:
+                ranked = _search(conn, "reranked", args.question, CANDIDATE_DEPTH)
+                conn.commit()  # Release the database snapshot before local LLM inference.
+                result = answer_from_passages(args.question, ranked)
+            except (OllamaError, RerankError, ValueError) as error:
+                parser.error(str(error))
+            # Escaped JSON also round-trips full source text through Windows code-page pipes.
+            print(json.dumps(asdict(result), indent=2))
+            if result.citation_validation.status == "invalid":
+                parser.exit(2)
         else:
             from .rerank import RerankError
 

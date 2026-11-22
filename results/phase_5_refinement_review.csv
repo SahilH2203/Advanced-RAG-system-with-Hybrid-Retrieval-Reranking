@@ -1,0 +1,29 @@
+cohort,example_id,mode,arm,manual_outcome,citation_status,cited_ids,source_check_for_pair
+original,cookie-count,live,baseline,correct,valid_ids,MED-3376,"MED-3376 reports 77 first- and sixth-graders, the population named in the question."
+original,cookie-count,live,refined,correct,valid_ids,MED-3376,"MED-3376 reports 77 first- and sixth-graders, the population named in the question."
+original,cookie-count,live_removed_support,baseline,abstained,abstained,,MED-4331 is a tea hydration study and MED-4779 is a tea meta-analysis. Neither contains the cookie study's count.
+original,cookie-count,live_removed_support,refined,abstained,abstained,,MED-4331 is a tea hydration study and MED-4779 is a tea meta-analysis. Neither contains the cookie study's count.
+original,cookie-count,mock_fabricated_id,baseline,control,invalid,MED-999999,"The injected number 77 agrees with MED-3376, but MED-999999 is absent from the evidence. This is a mocked check."
+original,cookie-count,mock_fabricated_id,refined,control,invalid,MED-999999,"The injected number 77 agrees with MED-3376, but MED-999999 is absent from the evidence. This is a mocked check."
+original,carrot-location,live,baseline,false,abstained,,The first source explicitly reports that both studies were conducted in New York in 2011.
+original,carrot-location,live,refined,correct,valid_ids,MED-3374,The first source explicitly reports that both studies were conducted in New York in 2011.
+original,snack-shape,live,baseline,correct,valid_ids,MED-3370,The source identifies figures (stars) as the most liked shape.
+original,snack-shape,live,refined,correct,valid_ids,MED-3370,The source identifies figures (stars) as the most liked shape.
+original,garden-survey,live,baseline,false,invalid,MED-3373,The first passage reports 436 Denver residents across 58 block groups. The requested number is the residents.
+original,garden-survey,live,refined,correct,valid_ids,MED-3373,The first passage reports 436 Denver residents across 58 block groups. The requested number is the residents.
+original,nursery-duration,live,baseline,false,abstained,,The abstract gives 32 days for fruit intervention and 16 days for the baseline. The question asks about intervention.
+original,nursery-duration,live,refined,correct,valid_ids,MED-4172,The abstract gives 32 days for fruit intervention and 16 days for the baseline. The question asks about intervention.
+original,cookie-clock-time,live,baseline,abstained,abstained,,The source says afternoon tea at school. None of the three abstracts gives an hour and minute for that event.
+original,cookie-clock-time,live,refined,abstained,abstained,,The source says afternoon tea at school. None of the three abstracts gives an hour and minute for that event.
+fresh,tv-chef-books,live,baseline,false,abstained,,MED-2180 explicitly identifies five bestselling cookery books. The number of recipes is 100.
+fresh,tv-chef-books,live,refined,correct,valid_ids,MED-2180,MED-2180 explicitly identifies five bestselling cookery books. The number of recipes is 100.
+fresh,menu-survey-method,live,baseline,false,abstained,,MED-2720 explicitly describes a web-based survey.
+fresh,menu-survey-method,live,refined,false,abstained,,MED-2720 explicitly describes a web-based survey.
+fresh,grocery-region,live,baseline,false,abstained,,MED-3085 names northeast Ohio as the region where branded grocery products were reviewed.
+fresh,grocery-region,live,refined,false,abstained,,MED-3085 names northeast Ohio as the region where branded grocery products were reviewed.
+fresh,guangzhou-memory-test,live,baseline,false,abstained,,MED-3537 names the delayed word recall test (DWRT).
+fresh,guangzhou-memory-test,live,refined,correct,valid_ids,MED-3537,MED-3537 names the delayed word recall test (DWRT).
+fresh,jacc-follow-up,live,baseline,false,abstained,,"MED-5030 reports a median follow-up of 14.3 years, a duration distinct from the final calendar year."
+fresh,jacc-follow-up,live,refined,correct,valid_ids,MED-5030,"MED-5030 reports a median follow-up of 14.3 years, a duration distinct from the final calendar year."
+fresh,menu-survey-software,live,baseline,abstained,abstained,,MED-2720 describes a web-based survey without naming its software. The other abstracts concern meals and restaurant marketing.
+fresh,menu-survey-software,live,refined,abstained,abstained,,MED-2720 describes a web-based survey without naming its software. The other abstracts concern meals and restaurant marketing.

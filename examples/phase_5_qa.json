@@ -1,0 +1,45 @@
+[
+  {
+    "id": "cookie-count",
+    "question": "How many first- and sixth-graders participated in the 'Split them!' cookie-size study at afternoon tea?",
+    "expected_answer": "77 students.",
+    "support_ids": ["MED-3376"],
+    "evidence_fragment": "First- and sixth-graders (n = 77) participated"
+  },
+  {
+    "id": "carrot-location",
+    "question": "Where and in what year were the two school studies reported in the paper mentioning 'X-ray Vision Carrots' conducted?",
+    "expected_answer": "New York in 2011.",
+    "support_ids": ["MED-3374"],
+    "evidence_fragment": "Both studies were conducted in New York in 2011."
+  },
+  {
+    "id": "snack-shape",
+    "question": "In the study 'Serving styles of raw snack vegetables', which shape did the children like most?",
+    "expected_answer": "Figures (stars).",
+    "support_ids": ["MED-3370"],
+    "evidence_fragment": "Figures were liked the most"
+  },
+  {
+    "id": "garden-survey",
+    "question": "How many residents were represented in the Denver survey on community garden participation and fruit and vegetable consumption?",
+    "expected_answer": "436 residents.",
+    "support_ids": ["MED-3373"],
+    "evidence_fragment": "436 residents across 58 block groups in Denver"
+  },
+  {
+    "id": "nursery-duration",
+    "question": "How long was the fruit intervention phase in the nursery study using modelling and rewards to increase preschool children's fruit and vegetable consumption?",
+    "expected_answer": "32 days.",
+    "support_ids": ["MED-4172"],
+    "evidence_fragment": "In the 32-day fruit intervention phase"
+  },
+  {
+    "id": "cookie-clock-time",
+    "question": "In the 'Split them!' cookie-size study, at exactly what clock time (hour and minute) did afternoon tea begin?",
+    "expected_answer": "The retrieved passages do not provide enough evidence.",
+    "support_ids": [],
+    "evidence_fragment": null,
+    "reason": "MED-3376 says 'during an afternoon tea at their school' and gives no clock time."
+  }
+]

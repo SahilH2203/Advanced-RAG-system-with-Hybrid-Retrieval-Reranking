@@ -1,0 +1,45 @@
+[
+  {
+    "id": "tv-chef-books",
+    "question": "In the UK comparison of television chefs' recipes with supermarket ready meals, how many bestselling cookery books supplied the recipes?",
+    "expected_answer": "Five cookery books.",
+    "support_ids": ["MED-2180"],
+    "evidence_fragment": "100 main meal recipes from five bestselling cookery books"
+  },
+  {
+    "id": "menu-survey-method",
+    "question": "How did the researchers administer the survey in the study of physical activity based menu labels on fast food meals?",
+    "expected_answer": "They used a web-based survey.",
+    "support_ids": ["MED-2720"],
+    "evidence_fragment": "Using a web-based survey, participants were randomly assigned to one of four menus"
+  },
+  {
+    "id": "grocery-region",
+    "question": "In what region were the best selling branded grocery products reviewed in the study of phosphorus-containing food additives?",
+    "expected_answer": "Northeast Ohio.",
+    "support_ids": ["MED-3085"],
+    "evidence_fragment": "The labels of 2394 best selling branded grocery products in northeast Ohio were reviewed"
+  },
+  {
+    "id": "guangzhou-memory-test",
+    "question": "What memory test did the Guangzhou Biobank Cohort Study use in its analysis of short or long sleep duration and memory impairment?",
+    "expected_answer": "The delayed word recall test (DWRT).",
+    "support_ids": ["MED-3537"],
+    "evidence_fragment": "sleep duration and delayed word recall test (DWRT) score"
+  },
+  {
+    "id": "jacc-follow-up",
+    "question": "What was the median follow-up time in the JACC study of sleep duration and mortality for Japanese men and women?",
+    "expected_answer": "14.3 years.",
+    "support_ids": ["MED-5030"],
+    "evidence_fragment": "During a median follow-up of 14.3 years"
+  },
+  {
+    "id": "menu-survey-software",
+    "question": "Which software platform, by brand name, hosted the web survey for the study of physical activity based menu labels on fast food meals?",
+    "expected_answer": "The retrieved passages do not provide enough evidence.",
+    "support_ids": [],
+    "evidence_fragment": null,
+    "reason": "MED-2720 describes a web-based survey and four menus but does not name its software provider."
+  }
+]
